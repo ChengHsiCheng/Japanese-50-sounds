@@ -1,181 +1,275 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>日文五十音學習練習</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日文五十音學習練習</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        .canvas-container {
+            touch-action: none;
+        }
+    </style>
 </head>
+<body class="bg-slate-50 text-slate-900">
+    <div id="root"></div>
 
-<body class="bg-slate-50">
-  <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
 
-  <script type="text/babel">
-    const { useState, useEffect, useMemo, useRef } = React;
+        const HIRAGANA_BASE = [
+            { char: 'あ', romaji: 'a' }, { char: 'い', romaji: 'i' }, { char: 'う', romaji: 'u' }, { char: 'え', romaji: 'e' }, { char: 'お', romaji: 'o' },
+            { char: 'か', romaji: 'ka' }, { char: 'き', romaji: 'ki' }, { char: 'く', romaji: 'ku' }, { char: 'け', romaji: 'ke' }, { char: 'こ', romaji: 'ko' },
+            { char: 'さ', romaji: 'sa' }, { char: 'し', romaji: 'shi' }, { char: 'す', romaji: 'su' }, { char: 'せ', romaji: 'se' }, { char: 'そ', romaji: 'so' },
+            { char: 'た', romaji: 'ta' }, { char: 'ち', romaji: 'chi' }, { char: 'つ', romaji: 'tsu' }, { char: 'て', romaji: 'te' }, { char: 'と', romaji: 'to' },
+            { char: 'な', romaji: 'na' }, { char: 'に', romaji: 'ni' }, { char: 'ぬ', romaji: 'nu' }, { char: 'ね', romaji: 'ne' }, { char: 'の', romaji: 'no' },
+            { char: 'は', romaji: 'ha' }, { char: 'ひ', romaji: 'hi' }, { char: 'ふ', romaji: 'fu' }, { char: 'へ', romaji: 'he' }, { char: 'ほ', romaji: 'ho' },
+            { char: 'ま', romaji: 'ma' }, { char: 'み', romaji: 'mi' }, { char: 'む', romaji: 'mu' }, { char: 'め', romaji: 'me' }, { char: 'も', romaji: 'mo' },
+            { char: 'や', romaji: 'ya' }, { char: 'ゆ', romaji: 'yu' }, { char: 'よ', romaji: 'yo' },
+            { char: 'ら', romaji: 'ra' }, { char: 'り', romaji: 'ri' }, { char: 'る', romaji: 'ru' }, { char: 'れ', romaji: 're' }, { char: 'ろ', romaji: 'ro' },
+            { char: 'わ', romaji: 'wa' }, { char: 'を', romaji: 'wo' }, { char: 'ん', romaji: 'n' }
+        ];
 
-    // --- 請在此處替換你的 Firebase 配置 ---
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
-    // ------------------------------------
+        const HIRAGANA_EXTRA = [
+            { char: 'が', romaji: 'ga' }, { char: 'ぎ', romaji: 'gi' }, { char: 'ぐ', romaji: 'gu' }, { char: 'げ', romaji: 'ge' }, { char: 'ご', romaji: 'go' },
+            { char: 'ざ', romaji: 'za' }, { char: 'じ', romaji: 'ji' }, { char: 'ず', romaji: 'zu' }, { char: 'ぜ', romaji: 'ze' }, { char: 'ぞ', romaji: 'zo' },
+            { char: 'だ', romaji: 'da' }, { char: 'ぢ', romaji: 'ji' }, { char: 'づ', romaji: 'zu' }, { char: 'で', romaji: 'de' }, { char: 'ど', romaji: 'do' },
+            { char: 'ば', romaji: 'ba' }, { char: 'び', romaji: 'bi' }, { char: 'ぶ', romaji: 'bu' }, { char: 'べ', romaji: 'be' }, { char: 'ぼ', romaji: 'bo' },
+            { char: 'ぱ', romaji: 'pa' }, { char: 'ぴ', romaji: 'pi' }, { char: 'ぷ', romaji: 'pu' }, { char: 'ぺ', romaji: 'pe' }, { char: 'ぽ', romaji: 'po' }
+        ];
 
-    // 由於在 CDN 環境，我們需要從全域 window 取得 Firebase 模組
-    // 注意：為了簡化部署，這裡建議你先在 Firebase Console 開啟 Anonymous Auth
+        const KATAKANA_BASE = [
+            { char: 'ア', romaji: 'a' }, { char: 'イ', romaji: 'i' }, { char: 'ウ', romaji: 'u' }, { char: 'エ', romaji: 'e' }, { char: 'オ', romaji: 'o' },
+            { char: 'カ', romaji: 'ka' }, { char: 'キ', romaji: 'ki' }, { char: 'ク', romaji: 'ku' }, { char: 'ケ', romaji: 'ke' }, { char: 'コ', romaji: 'ko' },
+            { char: 'サ', romaji: 'sa' }, { char: 'シ', romaji: 'shi' }, { char: 'ス', romaji: 'su' }, { char: 'セ', romaji: 'se' }, { char: 'ソ', romaji: 'so' },
+            { char: 'タ', romaji: 'ta' }, { char: 'チ', romaji: 'chi' }, { char: 'ツ', romaji: 'tsu' }, { char: 'て', romaji: 'te' }, { char: 'ト', romaji: 'to' },
+            { char: 'ナ', romaji: 'na' }, { char: 'ニ', romaji: 'ni' }, { char: 'ヌ', romaji: 'nu' }, { char: 'ネ', romaji: 'ne' }, { char: 'ノ', romaji: 'no' },
+            { char: 'ハ', romaji: 'ha' }, { char: 'ヒ', romaji: 'hi' }, { char: 'フ', romaji: 'fu' }, { char: 'ヘ', romaji: 'he' }, { char: 'ホ', romaji: 'ho' },
+            { char: 'マ', romaji: 'ma' }, { char: 'ミ', romaji: 'mi' }, { char: 'む', romaji: 'mu' }, { char: 'メ', romaji: 'me' }, { char: 'モ', romaji: 'mo' },
+            { char: 'ヤ', romaji: 'ya' }, { char: 'ユ', romaji: 'yu' }, { char: 'ヨ', romaji: 'yo' },
+            { char: 'ら', romaji: 'ra' }, { char: 'り', romaji: 'ri' }, { char: 'る', romaji: 'ru' }, { char: 'れ', romaji: 're' }, { char: 'ろ', romaji: 'ro' },
+            { char: 'わ', romaji: 'wa' }, { char: 'を', romaji: 'wo' }, { char: 'ん', romaji: 'n' }
+        ];
 
-    const HIRAGANA_BASE = [
-      { char: 'あ', romaji: 'a' }, { char: 'い', romaji: 'i' }, { char: 'う', romaji: 'u' }, { char: 'え', romaji: 'e' }, { char: 'お', romaji: 'o' },
-      { char: 'か', romaji: 'ka' }, { char: 'き', romaji: 'ki' }, { char: 'く', romaji: 'ku' }, { char: 'け', romaji: 'ke' }, { char: 'こ', romaji: 'ko' },
-      { char: 'さ', romaji: 'sa' }, { char: 'し', romaji: 'shi' }, { char: 'す', romaji: 'su' }, { char: 'せ', romaji: 'se' }, { char: 'そ', romaji: 'so' },
-      { char: 'た', romaji: 'ta' }, { char: 'ち', romaji: 'chi' }, { char: 'つ', romaji: 'tsu' }, { char: 'て', romaji: 'te' }, { char: 'と', romaji: 'to' },
-      { char: 'な', romaji: 'na' }, { char: 'に', romaji: 'ni' }, { char: 'ぬ', romaji: 'nu' }, { char: 'ね', romaji: 'ne' }, { char: 'の', romaji: 'no' },
-      { char: 'は', romaji: 'ha' }, { char: 'ひ', romaji: 'hi' }, { char: 'ふ', romaji: 'fu' }, { char: 'へ', romaji: 'he' }, { char: 'ほ', romaji: 'ho' },
-      { char: 'ま', romaji: 'ma' }, { char: 'み', romaji: 'mi' }, { char: 'む', romaji: 'mu' }, { char: 'め', romaji: 'me' }, { char: 'も', romaji: 'mo' },
-      { char: 'や', romaji: 'ya' }, { char: 'ゆ', romaji: 'yu' }, { char: 'よ', romaji: 'yo' },
-      { char: 'ら', romaji: 'ra' }, { char: 'り', romaji: 'ri' }, { char: 'る', romaji: 'ru' }, { char: 'れ', romaji: 're' }, { char: 'ろ', romaji: 'ro' },
-      { char: 'わ', romaji: 'wa' }, { char: 'を', romaji: 'wo' }, { char: 'ん', romaji: 'n' }
-    ];
+        const ALL_DATA = {
+            'h-base': { title: '平假名 清音', data: HIRAGANA_BASE },
+            'h-extra': { title: '平假名 濁音', data: HIRAGANA_EXTRA },
+            'k-base': { title: '片假名 清音', data: KATAKANA_BASE }
+        };
 
-    const HIRAGANA_EXTRA = [
-      { char: 'が', romaji: 'ga' }, { char: 'ぎ', romaji: 'gi' }, { char: 'ぐ', romaji: 'gu' }, { char: 'げ', romaji: 'ge' }, { char: 'ご', romaji: 'go' },
-      { char: 'ざ', romaji: 'za' }, { char: 'じ', romaji: 'ji' }, { char: 'ず', romaji: 'zu' }, { char: 'ぜ', romaji: 'ze' }, { char: 'ぞ', romaji: 'zo' },
-      { char: 'だ', romaji: 'da' }, { char: 'ぢ', romaji: 'ji' }, { char: 'づ', romaji: 'zu' }, { char: 'で', romaji: 'de' }, { char: 'ど', romaji: 'do' },
-      { char: 'ば', romaji: 'ba' }, { char: 'び', romaji: 'bi' }, { char: 'ぶ', romaji: 'bu' }, { char: 'べ', romaji: 'be' }, { char: 'ぼ', romaji: 'bo' },
-      { char: 'ぱ', romaji: 'pa' }, { char: 'ぴ', romaji: 'pi' }, { char: 'ぷ', romaji: 'pu' }, { char: 'ぺ', romaji: 'pe' }, { char: 'ぽ', romaji: 'po' }
-    ];
+        const WritingPad = ({ targetChar }) => {
+            const canvasRef = useRef(null);
+            const [isDrawing, setIsDrawing] = useState(false);
 
-    const ALL_CHARS = [
-      ...HIRAGANA_BASE.map(i => ({ ...i, type: 'h' })),
-      ...HIRAGANA_EXTRA.map(i => ({ ...i, type: 'h' }))
-    ];
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                ctx.lineWidth = 6;
+                ctx.lineCap = 'round';
+                ctx.strokeStyle = '#4f46e5';
+                clearCanvas();
+            }, [targetChar]);
 
-    // --- 寫字練習元件 ---
-    const WritingPad = ({ targetChar }) => {
-      const canvasRef = useRef(null);
-      const [isDrawing, setIsDrawing] = useState(false);
+            const clearCanvas = () => {
+                const ctx = canvasRef.current.getContext('2d');
+                ctx.clearRect(0, 0, 256, 256);
+            };
 
-      useEffect(() => {
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        ctx.lineWidth = 5;
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = '#4f46e5';
-        clearCanvas();
-      }, [targetChar]);
+            const getPos = (e) => {
+                const rect = canvasRef.current.getBoundingClientRect();
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                return {
+                    x: clientX - rect.left,
+                    y: clientY - rect.top
+                };
+            };
 
-      const clearCanvas = () => {
-        const ctx = canvasRef.current.getContext('2d');
-        ctx.clearRect(0, 0, 256, 256);
-      };
+            const startDrawing = (e) => {
+                setIsDrawing(true);
+                const { x, y } = getPos(e);
+                const ctx = canvasRef.current.getContext('2d');
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            };
 
-      const startDrawing = (e) => {
-        setIsDrawing(true);
-        const rect = canvasRef.current.getBoundingClientRect();
-        const x = (e.clientX || e.touches[0].clientX) - rect.left;
-        const y = (e.clientY || e.touches[0].clientY) - rect.top;
-        const ctx = canvasRef.current.getContext('2d');
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-      };
+            const draw = (e) => {
+                if (!isDrawing) return;
+                const { x, y } = getPos(e);
+                const ctx = canvasRef.current.getContext('2d');
+                ctx.lineTo(x, y);
+                ctx.stroke();
+            };
 
-      const draw = (e) => {
-        if (!isDrawing) return;
-        const rect = canvasRef.current.getBoundingClientRect();
-        const x = (e.clientX || e.touches[0].clientX) - rect.left;
-        const y = (e.clientY || e.touches[0].clientY) - rect.top;
-        const ctx = canvasRef.current.getContext('2d');
-        ctx.lineTo(x, y);
-        ctx.stroke();
-      };
+            return (
+                <div className="flex flex-col items-center gap-2">
+                    <div className="relative border-4 border-slate-200 rounded-2xl bg-white w-64 h-64 overflow-hidden canvas-container">
+                        <div className="absolute inset-0 flex items-center justify-center text-slate-100 text-[160px] pointer-events-none select-none">
+                            {targetChar}
+                        </div>
+                        <canvas 
+                            ref={canvasRef} 
+                            width={256} 
+                            height={256} 
+                            onMouseDown={startDrawing} 
+                            onMouseMove={draw} 
+                            onMouseUp={() => setIsDrawing(false)} 
+                            onMouseOut={() => setIsDrawing(false)}
+                            onTouchStart={startDrawing} 
+                            onTouchMove={draw} 
+                            onTouchEnd={() => setIsDrawing(false)} 
+                            className="relative z-10 w-full h-full cursor-crosshair" 
+                        />
+                    </div>
+                    <button onClick={clearCanvas} className="text-sm font-bold text-slate-400 hover:text-indigo-600 transition-colors">清除重寫</button>
+                </div>
+            );
+        };
 
-      return (
-        <div className="flex flex-col items-center gap-2">
-          <div className="relative border-2 border-slate-200 rounded-xl bg-white w-64 h-64">
-            <div className="absolute inset-0 flex items-center justify-center text-slate-100 text-8xl pointer-events-none">{targetChar}</div>
-            <canvas ref={canvasRef} width={256} height={256} onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={() => setIsDrawing(false)} onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={() => setIsDrawing(false)} className="relative z-10 w-full h-full" />
-          </div>
-          <button onClick={clearCanvas} className="text-xs text-slate-400">清除</button>
-        </div>
-      );
-    };
+        function App() {
+            const [view, setView] = useState('dashboard');
+            const [activeTab, setActiveTab] = useState('h-base');
+            const [userData, setUserData] = useState(() => {
+                const saved = localStorage.getItem('jp_study_data');
+                return saved ? JSON.parse(saved) : { mastered: [] };
+            });
 
-    // --- 主應用程式 ---
-    function App() {
-      const [view, setView] = useState('dashboard');
-      const [userData, setUserData] = useState(() => {
-        const saved = localStorage.getItem('jp_study_data');
-        return saved ? JSON.parse(saved) : { mastered: [], stats: {} };
-      });
+            useEffect(() => {
+                localStorage.setItem('jp_study_data', JSON.stringify(userData));
+            }, [userData]);
 
-      useEffect(() => {
-        localStorage.setItem('jp_study_data', JSON.stringify(userData));
-      }, [userData]);
+            const saveMastered = (keys) => {
+                setUserData(prev => ({ ...prev, mastered: [...new Set([...prev.mastered, ...keys])] }));
+            };
 
-      const saveMastered = (keys) => {
-        setUserData(prev => ({ ...prev, mastered: [...new Set([...prev.mastered, ...keys])] }));
-      };
+            return (
+                <div className="max-w-xl mx-auto min-h-screen flex flex-col p-4">
+                    {view === 'dashboard' ? (
+                        <Dashboard 
+                            data={userData} 
+                            setView={setView} 
+                            activeTab={activeTab} 
+                            setActiveTab={setActiveTab} 
+                        />
+                    ) : (
+                        <StudyMode 
+                            data={userData} 
+                            activeTab={activeTab}
+                            onComplete={saveMastered} 
+                            setView={setView} 
+                        />
+                    )}
+                    <footer className="mt-auto py-4 text-center text-slate-300 text-xs font-medium">
+                        Progress is saved in your browser storage.
+                    </footer>
+                </div>
+            );
+        }
 
-      return (
-        <div className="max-w-md mx-auto p-4 min-h-screen">
-          {view === 'dashboard' && <Dashboard data={userData} setView={setView} />}
-          {view === 'study' && <StudyMode data={userData} onComplete={saveMastered} setView={setView} />}
-        </div>
-      );
-    }
+        function Dashboard({ data, setView, activeTab, setActiveTab }) {
+            const currentGroup = ALL_DATA[activeTab];
+            const masteredInGroup = currentGroup.data.filter(c => data.mastered.includes(c.char)).length;
 
-    function Dashboard({ data, setView }) {
-      return (
-        <div className="pt-8">
-          <h1 className="text-3xl font-black text-indigo-900 mb-6">日文練習</h1>
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6">
-            <div className="text-sm font-bold text-slate-400 mb-1">掌握進度</div>
-            <div className="text-4xl font-black text-indigo-600">{Math.round((data.mastered.length / ALL_CHARS.length) * 100)}%</div>
-          </div>
-          <button onClick={() => setView('study')} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-100 mb-4">開始學習新內容</button>
-          <div className="grid grid-cols-10 gap-1">
-            {ALL_CHARS.map((c, i) => (
-              <div key={i} className={`aspect-square flex items-center justify-center rounded-md text-xs ${data.mastered.includes(c.char) ? 'bg-indigo-500 text-white' : 'bg-white text-slate-200'}`}>{c.char}</div>
-            ))}
-          </div>
-        </div>
-      );
-    }
+            return (
+                <div className="space-y-6">
+                    <header className="flex justify-between items-end">
+                        <div>
+                            <h1 className="text-3xl font-black text-slate-900">日文五十音</h1>
+                            <p className="text-slate-400 text-xs font-bold tracking-widest">PROGRESS TRACKER</p>
+                        </div>
+                    </header>
 
-    function StudyMode({ data, onComplete, setView }) {
-      const [index, setIndex] = useState(0);
-      const list = useMemo(() => ALL_CHARS.filter(c => !data.mastered.includes(c.char)).slice(0, 5), []);
+                    <div className="flex gap-1 p-1 bg-slate-200 rounded-xl">
+                        {Object.keys(ALL_DATA).map(key => (
+                            <button
+                                key={key}
+                                onClick={() => setActiveTab(key)}
+                                className={`flex-1 py-2 text-xs font-black rounded-lg transition-all ${activeTab === key ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                            >
+                                {ALL_DATA[key].title.split(' ')[1]}
+                            </button>
+                        ))}
+                    </div>
 
-      if (list.length === 0) return <div className="text-center pt-20">太棒了，你學完了！<button onClick={() => setView('dashboard')}>返回</button></div>;
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex justify-between items-center">
+                        <div>
+                            <h2 className="text-lg font-black">{currentGroup.title}</h2>
+                            <p className="text-sm font-bold text-slate-400">{masteredInGroup} / {currentGroup.data.length}</p>
+                        </div>
+                        <button 
+                            onClick={() => setView('study')} 
+                            className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all"
+                        >
+                            Start Study
+                        </button>
+                    </div>
 
-      const current = list[index];
+                    <div className="grid grid-cols-5 gap-2">
+                        {currentGroup.data.map((c, i) => {
+                            const isMastered = data.mastered.includes(c.char);
+                            return (
+                                <div key={i} className="flex flex-col items-center gap-1">
+                                    <div className={`w-full aspect-square flex items-center justify-center rounded-xl text-xl font-bold transition-all border-2 ${isMastered ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-white text-slate-200 border-slate-100'}`}>
+                                        {c.char}
+                                    </div>
+                                    <span className="text-[10px] font-black text-slate-300 uppercase">{c.romaji}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
 
-      return (
-        <div className="pt-8 text-center">
-          <div className="text-8xl font-black text-indigo-600 mb-2">{current.char}</div>
-          <div className="text-2xl font-bold text-slate-400 mb-8">{current.romaji}</div>
-          <WritingPad targetChar={current.char} />
-          <div className="flex gap-4 mt-8">
-            <button onClick={() => setIndex(i => Math.max(0, i - 1))} className="flex-1 py-3 border rounded-xl" disabled={index === 0}>上一個</button>
-            {index < list.length - 1 ?
-              <button onClick={() => setIndex(i => i + 1)} className="flex-1 py-3 bg-indigo-600 text-white rounded-xl">下一個</button> :
-              <button onClick={() => { onComplete(list.map(i => i.char)); setView('dashboard'); }} className="flex-1 py-3 bg-indigo-600 text-white rounded-xl">完成</button>
-            }
-          </div>
-        </div>
-      );
-    }
+        function StudyMode({ data, activeTab, onComplete, setView }) {
+            const [index, setIndex] = useState(0);
+            const list = useMemo(() => {
+                const unmastered = ALL_DATA[activeTab].data.filter(c => !data.mastered.includes(c.char));
+                return unmastered.length > 0 ? unmastered.slice(0, 5) : [];
+            }, [activeTab]);
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
-  </script>
+            if (list.length === 0) return (
+                <div className="text-center pt-20 space-y-6">
+                    <div className="text-6xl">✨</div>
+                    <h2 className="text-2xl font-black">All characters mastered!</h2>
+                    <button onClick={() => setView('dashboard')} className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-black">Go Back</button>
+                </div>
+            );
+
+            const current = list[index];
+
+            return (
+                <div className="flex flex-col items-center">
+                    <div className="mb-6 text-center">
+                        <div className="text-[120px] font-black text-indigo-600 leading-none">{current.char}</div>
+                        <div className="text-2xl font-black text-slate-300 uppercase tracking-widest mt-2">{current.romaji}</div>
+                    </div>
+                    
+                    <WritingPad targetChar={current.char} />
+
+                    <div className="w-full flex gap-4 mt-8">
+                        <button 
+                            onClick={() => setIndex(i => Math.max(0, i-1))} 
+                            className="flex-1 py-4 border-2 border-slate-100 text-slate-400 font-black rounded-2xl disabled:opacity-30" 
+                            disabled={index===0}
+                        >
+                            Prev
+                        </button>
+                        {index < list.length - 1 ? 
+                            <button onClick={() => setIndex(i => i+1)} className="flex-1 py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-lg">Next</button> :
+                            <button onClick={() => { onComplete(list.map(i=>i.char)); setView('dashboard'); }} className="flex-1 py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-lg">Finish</button>
+                        }
+                    </div>
+                    <button onClick={() => setView('dashboard')} className="mt-8 text-xs font-black text-slate-300 uppercase hover:text-slate-500 transition-colors">Exit Study</button>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
-
 </html>
