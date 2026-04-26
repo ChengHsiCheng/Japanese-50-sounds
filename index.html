@@ -90,6 +90,44 @@
             { id: 'k', label: '片假名', subs: [{ id: 'k-base', label: '清音' }, { id: 'k-extra', label: '濁/半濁' }, { id: 'k-yoon', label: '拗音' }] }
         ];
 
+        // 語音播放：使用 Web Speech API 播放日文
+        const speakJapanese = (text) => {
+            if (!text || !window.speechSynthesis) return;
+            window.speechSynthesis.cancel();
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = 'ja-JP';
+            utter.rate = 0.85;
+            // 優先選擇日文語音
+            const voices = window.speechSynthesis.getVoices();
+            const jaVoice = voices.find(v => v.lang.startsWith('ja'));
+            if (jaVoice) utter.voice = jaVoice;
+            window.speechSynthesis.speak(utter);
+        };
+
+        // 語音按鈕元件
+        const SpeakButton = ({ char, size = 'md' }) => {
+            const [playing, setPlaying] = useState(false);
+            const sizeClass = size === 'lg'
+                ? 'w-14 h-14 text-2xl'
+                : 'w-10 h-10 text-base';
+            const handleSpeak = () => {
+                if (!char) return;
+                setPlaying(true);
+                speakJapanese(char);
+                setTimeout(() => setPlaying(false), 900);
+            };
+            return (
+                <button
+                    onClick={handleSpeak}
+                    className={`${sizeClass} flex items-center justify-center rounded-full border-2 transition-all active:scale-90
+                        ${playing ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-white border-slate-200 text-indigo-500 hover:border-indigo-400'}`}
+                    title="播放發音"
+                >
+                    {playing ? '♪' : '🔊'}
+                </button>
+            );
+        };
+
         const WritingPad = ({ targetChar, onClearRef }) => {
             const canvasRef = useRef(null);
             const [isDrawing, setIsDrawing] = useState(false);
@@ -203,6 +241,7 @@
 
         function Dashboard({ data, setView, activeMainCat, setActiveMainCat, activeSubCat, setActiveSubCat, setSettings }) {
             const [isPracticeModal, setIsPracticeModal] = useState(false);
+            const [selectedChar, setSelectedChar] = useState(null);
             const [tempSettings, setTempSettings] = useState({ count: 10, selectedCats: [activeSubCat] });
 
             const currentMain = CATEGORIES.find(c => c.id === activeMainCat);
@@ -275,15 +314,42 @@
                                 const weight = data.weights[c.char] || 1;
                                 return (
                                     <div key={i} className="relative">
-                                        <div className={`aspect-square flex items-center justify-center rounded-xl text-lg font-bold transition-all border-2 ${isMastered ? 'bg-indigo-50 border-indigo-100 text-indigo-600' : 'bg-slate-50 border-slate-50 text-slate-200'}`}>
+                                        <button
+                                            onClick={() => setSelectedChar(c)}
+                                            className={`w-full aspect-square flex items-center justify-center rounded-xl text-lg font-bold transition-all border-2 active:scale-90
+                                                ${isMastered ? 'bg-indigo-50 border-indigo-100 text-indigo-600 hover:bg-indigo-100' : 'bg-slate-50 border-slate-100 text-slate-300 hover:bg-slate-100'}`}
+                                        >
                                             {c.char}
-                                        </div>
-                                        {weight > 1 && <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse border-2 border-white"></div>}
+                                        </button>
+                                        {weight > 1 && <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse border-2 border-white pointer-events-none"></div>}
                                     </div>
                                 );
                             })}
                         </div>
                     </div>
+
+                    {selectedChar && (
+                        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedChar(null)}>
+                            <div className="bg-white w-full max-w-md rounded-t-[40px] md:rounded-[40px] p-6 shadow-2xl animate-in slide-in-from-bottom duration-300" onClick={e => e.stopPropagation()}>
+                                <div className="flex justify-between items-center mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="text-5xl font-black text-indigo-600 leading-none">{selectedChar.char}</div>
+                                        <div>
+                                            <div className="text-base font-black text-slate-400 uppercase tracking-widest">{selectedChar.romaji}</div>
+                                            <div className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block mt-1 ${data.mastered.includes(selectedChar.char) ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                                                {data.mastered.includes(selectedChar.char) ? '✓ 已掌握' : '未學習'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <SpeakButton char={selectedChar.char} size="lg" />
+                                        <button onClick={() => setSelectedChar(null)} className="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-slate-500 text-xl">✕</button>
+                                    </div>
+                                </div>
+                                <WritingPad targetChar={selectedChar.char} onClearRef={null} />
+                            </div>
+                        </div>
+                    )}
 
                     {isPracticeModal && (
                         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
@@ -372,6 +438,9 @@
                     <div className="text-center">
                         <div className="text-8xl font-black text-indigo-600 leading-none">{current.char}</div>
                         <div className="text-xl font-black text-slate-300 uppercase mt-2 tracking-widest">{current.romaji}</div>
+                        <div className="flex justify-center mt-3">
+                            <SpeakButton char={current.char} size="lg" />
+                        </div>
                     </div>
                     <WritingPad targetChar={current.char} onClearRef={clearRef} />
                     <div className="w-full flex gap-3">
@@ -448,7 +517,10 @@
                         <div className="w-8"></div>
                     </div>
                     <div className="text-center h-28 flex flex-col justify-center">
-                        <div className={`text-xl font-black text-indigo-300 uppercase mb-1 transition-all ${showAnswer ? 'opacity-100' : 'opacity-0'}`}>{current.char}</div>
+                        <div className={`flex items-center justify-center gap-2 mb-1 transition-all ${showAnswer ? 'opacity-100' : 'opacity-0'}`}>
+                            <div className="text-xl font-black text-indigo-300 uppercase">{current.char}</div>
+                            <SpeakButton char={showAnswer ? current.char : null} size="sm" />
+                        </div>
                         <div className="text-6xl font-black text-slate-800 leading-none">{current.romaji}</div>
                     </div>
                     <WritingPad targetChar={showAnswer ? current.char : ""} onClearRef={clearRef} />
