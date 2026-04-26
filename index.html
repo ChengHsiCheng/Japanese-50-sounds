@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>日文五十音學習練習</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -12,80 +13,110 @@
         .canvas-container {
             touch-action: none;
         }
+
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900">
+
+<body class="bg-slate-50 text-slate-900 font-sans">
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        const HIRAGANA_BASE = [
-            { char: 'あ', romaji: 'a' }, { char: 'い', romaji: 'i' }, { char: 'う', romaji: 'u' }, { char: 'え', romaji: 'e' }, { char: 'お', romaji: 'o' },
-            { char: 'か', romaji: 'ka' }, { char: 'き', romaji: 'ki' }, { char: 'く', romaji: 'ku' }, { char: 'け', romaji: 'ke' }, { char: 'こ', romaji: 'ko' },
-            { char: 'さ', romaji: 'sa' }, { char: 'し', romaji: 'shi' }, { char: 'す', romaji: 'su' }, { char: 'せ', romaji: 'se' }, { char: 'そ', romaji: 'so' },
-            { char: 'た', romaji: 'ta' }, { char: 'ち', romaji: 'chi' }, { char: 'つ', romaji: 'tsu' }, { char: 'て', romaji: 'te' }, { char: 'と', romaji: 'to' },
-            { char: 'な', romaji: 'na' }, { char: 'に', romaji: 'ni' }, { char: 'ぬ', romaji: 'nu' }, { char: 'ね', romaji: 'ne' }, { char: 'の', romaji: 'no' },
-            { char: 'は', romaji: 'ha' }, { char: 'ひ', romaji: 'hi' }, { char: 'ふ', romaji: 'fu' }, { char: 'へ', romaji: 'he' }, { char: 'ほ', romaji: 'ho' },
-            { char: 'ま', romaji: 'ma' }, { char: 'み', romaji: 'mi' }, { char: 'む', romaji: 'mu' }, { char: 'め', romaji: 'me' }, { char: 'も', romaji: 'mo' },
-            { char: 'や', romaji: 'ya' }, { char: 'ゆ', romaji: 'yu' }, { char: 'よ', romaji: 'yo' },
-            { char: 'ら', romaji: 'ra' }, { char: 'り', romaji: 'ri' }, { char: 'る', romaji: 'ru' }, { char: 'れ', romaji: 're' }, { char: 'ろ', romaji: 'ro' },
-            { char: 'わ', romaji: 'wa' }, { char: 'を', romaji: 'wo' }, { char: 'ん', romaji: 'n' }
-        ];
-
-        const HIRAGANA_EXTRA = [
-            { char: 'が', romaji: 'ga' }, { char: 'ぎ', romaji: 'gi' }, { char: 'ぐ', romaji: 'gu' }, { char: 'げ', romaji: 'ge' }, { char: 'ご', romaji: 'go' },
-            { char: 'ざ', romaji: 'za' }, { char: 'じ', romaji: 'ji' }, { char: 'ず', romaji: 'zu' }, { char: 'ぜ', romaji: 'ze' }, { char: 'ぞ', romaji: 'zo' },
-            { char: 'だ', romaji: 'da' }, { char: 'ぢ', romaji: 'ji' }, { char: 'づ', romaji: 'zu' }, { char: 'で', romaji: 'de' }, { char: 'ど', romaji: 'do' },
-            { char: 'ば', romaji: 'ba' }, { char: 'び', romaji: 'bi' }, { char: 'ぶ', romaji: 'bu' }, { char: 'べ', romaji: 'be' }, { char: 'ぼ', romaji: 'bo' },
-            { char: 'ぱ', romaji: 'pa' }, { char: 'ぴ', romaji: 'pi' }, { char: 'ぷ', romaji: 'pu' }, { char: 'ぺ', romaji: 'pe' }, { char: 'ぽ', romaji: 'po' }
-        ];
-
-        const KATAKANA_BASE = [
-            { char: 'ア', romaji: 'a' }, { char: 'イ', romaji: 'i' }, { char: 'ウ', romaji: 'u' }, { char: 'エ', romaji: 'e' }, { char: 'オ', romaji: 'o' },
-            { char: 'カ', romaji: 'ka' }, { char: 'キ', romaji: 'ki' }, { char: 'ク', romaji: 'ku' }, { char: 'ケ', romaji: 'ke' }, { char: 'コ', romaji: 'ko' },
-            { char: 'サ', romaji: 'sa' }, { char: 'シ', romaji: 'shi' }, { char: 'ス', romaji: 'su' }, { char: 'セ', romaji: 'se' }, { char: 'ソ', romaji: 'so' },
-            { char: 'タ', romaji: 'ta' }, { char: 'チ', romaji: 'chi' }, { char: 'ツ', romaji: 'tsu' }, { char: 'て', romaji: 'te' }, { char: 'ト', romaji: 'to' },
-            { char: 'ナ', romaji: 'na' }, { char: 'ニ', romaji: 'ni' }, { char: 'ヌ', romaji: 'nu' }, { char: 'ネ', romaji: 'ne' }, { char: 'ノ', romaji: 'no' },
-            { char: 'ハ', romaji: 'ha' }, { char: 'ヒ', romaji: 'hi' }, { char: 'フ', romaji: 'fu' }, { char: 'ヘ', romaji: 'he' }, { char: 'ホ', romaji: 'ho' },
-            { char: 'マ', romaji: 'ma' }, { char: 'ミ', romaji: 'mi' }, { char: 'む', romaji: 'mu' }, { char: 'メ', romaji: 'me' }, { char: 'モ', romaji: 'mo' },
-            { char: 'ヤ', romaji: 'ya' }, { char: 'ユ', romaji: 'yu' }, { char: 'ヨ', romaji: 'yo' },
-            { char: 'ら', romaji: 'ra' }, { char: 'り', romaji: 'ri' }, { char: 'る', romaji: 'ru' }, { char: 'れ', romaji: 're' }, { char: 'ろ', romaji: 'ro' },
-            { char: 'わ', romaji: 'wa' }, { char: 'を', romaji: 'wo' }, { char: 'ん', romaji: 'n' }
-        ];
-
-        const ALL_DATA = {
-            'h-base': { title: '平假名 清音', data: HIRAGANA_BASE },
-            'h-extra': { title: '平假名 濁音', data: HIRAGANA_EXTRA },
-            'k-base': { title: '片假名 清音', data: KATAKANA_BASE }
+        const RAW_DATA = {
+            'h-base': [
+                { char: 'あ', romaji: 'a' }, { char: 'い', romaji: 'i' }, { char: 'う', romaji: 'u' }, { char: 'え', romaji: 'e' }, { char: 'お', romaji: 'o' },
+                { char: 'か', romaji: 'ka' }, { char: 'き', romaji: 'ki' }, { char: 'く', romaji: 'ku' }, { char: 'け', romaji: 'ke' }, { char: 'こ', romaji: 'ko' },
+                { char: 'さ', romaji: 'sa' }, { char: 'し', romaji: 'shi' }, { char: 'す', romaji: 'su' }, { char: 'せ', romaji: 'se' }, { char: 'そ', romaji: 'so' },
+                { char: 'た', romaji: 'ta' }, { char: 'ち', romaji: 'chi' }, { char: 'つ', romaji: 'tsu' }, { char: 'て', romaji: 'te' }, { char: 'と', romaji: 'to' },
+                { char: 'な', romaji: 'na' }, { char: 'に', romaji: 'ni' }, { char: 'ぬ', romaji: 'nu' }, { char: 'ね', romaji: 'ne' }, { char: 'の', romaji: 'no' },
+                { char: 'は', romaji: 'ha' }, { char: 'ひ', romaji: 'hi' }, { char: 'ふ', romaji: 'fu' }, { char: 'へ', romaji: 'he' }, { char: 'ほ', romaji: 'ho' },
+                { char: 'ま', romaji: 'ma' }, { char: 'み', romaji: 'mi' }, { char: 'む', romaji: 'mu' }, { char: 'め', romaji: 'me' }, { char: 'も', romaji: 'mo' },
+                { char: 'や', romaji: 'ya' }, { char: 'ゆ', romaji: 'yu' }, { char: 'よ', romaji: 'yo' },
+                { char: 'ら', romaji: 'ra' }, { char: 'り', romaji: 'ri' }, { char: 'る', romaji: 'ru' }, { char: 'れ', romaji: 're' }, { char: 'ろ', romaji: 'ro' },
+                { char: 'わ', romaji: 'wa' }, { char: 'を', romaji: 'wo' }, { char: 'ん', romaji: 'n' }
+            ],
+            'h-extra': [
+                { char: 'が', romaji: 'ga' }, { char: 'ぎ', romaji: 'gi' }, { char: 'ぐ', romaji: 'gu' }, { char: 'げ', romaji: 'ge' }, { char: 'ご', romaji: 'go' },
+                { char: 'ざ', romaji: 'za' }, { char: 'じ', romaji: 'ji' }, { char: 'ず', romaji: 'zu' }, { char: 'ぜ', romaji: 'ze' }, { char: 'ぞ', romaji: 'zo' },
+                { char: 'だ', romaji: 'da' }, { char: 'ぢ', romaji: 'ji' }, { char: 'づ', romaji: 'zu' }, { char: 'で', romaji: 'de' }, { char: 'ど', romaji: 'do' },
+                { char: 'ば', romaji: 'ba' }, { char: 'び', romaji: 'bi' }, { char: 'ぶ', romaji: 'bu' }, { char: 'べ', romaji: 'be' }, { char: 'ぼ', romaji: 'bo' },
+                { char: 'ぱ', romaji: 'pa' }, { char: 'ぴ', romaji: 'pi' }, { char: 'ぷ', romaji: 'pu' }, { char: 'ぺ', romaji: 'pe' }, { char: 'ぽ', romaji: 'po' }
+            ],
+            'h-yoon': [
+                { char: 'きゃ', romaji: 'kya' }, { char: 'きゅ', romaji: 'kyu' }, { char: 'きょ', romaji: 'kyo' },
+                { char: 'しゃ', romaji: 'sha' }, { char: 'しゅ', romaji: 'shu' }, { char: 'しょ', romaji: 'sho' },
+                { char: 'ちゃ', romaji: 'cha' }, { char: 'ちゅ', romaji: 'chu' }, { char: 'ちょ', romaji: 'cho' },
+                { char: 'にゃ', romaji: 'nya' }, { char: 'にゅ', romaji: 'nyu' }, { char: 'にょ', romaji: 'nyo' },
+                { char: 'ひゃ', romaji: 'hya' }, { char: 'ひゅ', romaji: 'hyu' }, { char: 'ひょ', romaji: 'hyo' },
+                { char: 'みゃ', romaji: 'mya' }, { char: 'みゅ', romaji: 'myu' }, { char: 'みょ', romaji: 'myo' },
+                { char: 'りゃ', romaji: 'rya' }, { char: 'りゅ', romaji: 'ryu' }, { char: 'りょ', romaji: 'ryo' }
+            ],
+            'k-base': [
+                { char: 'ア', romaji: 'a' }, { char: 'イ', romaji: 'i' }, { char: 'ウ', romaji: 'u' }, { char: 'エ', romaji: 'e' }, { char: 'オ', romaji: 'o' },
+                { char: 'カ', romaji: 'ka' }, { char: 'キ', romaji: 'ki' }, { char: 'ク', romaji: 'ku' }, { char: 'ケ', romaji: 'ke' }, { char: 'コ', romaji: 'ko' },
+                { char: 'サ', romaji: 'sa' }, { char: 'シ', romaji: 'shi' }, { char: 'ス', romaji: 'su' }, { char: 'セ', romaji: 'se' }, { char: 'ソ', romaji: 'so' },
+                { char: 'タ', romaji: 'ta' }, { char: 'チ', romaji: 'chi' }, { char: 'ツ', romaji: 'tsu' }, { char: 'テ', romaji: 'te' }, { char: 'ト', romaji: 'to' },
+                { char: 'ナ', romaji: 'na' }, { char: 'ニ', romaji: 'ni' }, { char: 'ヌ', romaji: 'nu' }, { char: 'ネ', romaji: 'ne' }, { char: 'ノ', romaji: 'no' },
+                { char: 'ハ', romaji: 'ha' }, { char: 'ヒ', romaji: 'hi' }, { char: 'フ', romaji: 'fu' }, { char: 'ヘ', romaji: 'he' }, { char: 'ホ', romaji: 'ho' },
+                { char: 'マ', romaji: 'ma' }, { char: 'ミ', romaji: 'mi' }, { char: 'ム', romaji: 'mu' }, { char: 'メ', romaji: 'me' }, { char: 'モ', romaji: 'mo' },
+                { char: 'ヤ', romaji: 'ya' }, { char: 'ユ', romaji: 'yu' }, { char: 'ヨ', romaji: 'yo' },
+                { char: 'ラ', romaji: 'ra' }, { char: 'リ', romaji: 'ri' }, { char: 'ル', romaji: 'ru' }, { char: 'レ', romaji: 're' }, { char: 'ロ', romaji: 'ro' },
+                { char: 'ワ', romaji: 'wa' }, { char: 'ヲ', romaji: 'wo' }, { char: 'ン', romaji: 'n' }
+            ],
+            'k-extra': [
+                { char: 'ガ', romaji: 'ga' }, { char: 'ギ', romaji: 'gi' }, { char: 'グ', romaji: 'gu' }, { char: 'ゲ', romaji: 'ge' }, { char: 'ゴ', romaji: 'go' },
+                { char: 'ザ', romaji: 'za' }, { char: 'ジ', romaji: 'ji' }, { char: 'ズ', romaji: 'zu' }, { char: 'ゼ', romaji: 'ze' }, { char: 'ゾ', romaji: 'zo' },
+                { char: 'ダ', romaji: 'da' }, { char: 'ヂ', romaji: 'ji' }, { char: 'ヅ', romaji: 'zu' }, { char: 'デ', romaji: 'de' }, { char: 'ド', romaji: 'do' },
+                { char: 'バ', romaji: 'ba' }, { char: 'ビ', romaji: 'bi' }, { char: 'ブ', romaji: 'bu' }, { char: 'ベ', romaji: 'be' }, { char: 'ボ', romaji: 'bo' },
+                { char: 'パ', romaji: 'pa' }, { char: 'ピ', romaji: 'pi' }, { char: 'プ', romaji: 'pu' }, { char: 'ペ', romaji: 'pe' }, { char: 'ポ', romaji: 'po' }
+            ],
+            'k-yoon': [
+                { char: 'キャ', romaji: 'kya' }, { char: 'キュ', romaji: 'kyu' }, { char: 'キョ', romaji: 'kyo' },
+                { char: 'シャ', romaji: 'sha' }, { char: 'シュ', romaji: 'shu' }, { char: 'ショ', romaji: 'sho' },
+                { char: 'チャ', romaji: 'cha' }, { char: 'チュ', romaji: 'chu' }, { char: 'チョ', romaji: 'cho' },
+                { char: 'ニャ', romaji: 'nya' }, { char: 'ニュ', romaji: 'nyu' }, { char: 'ニョ', romaji: 'nyo' },
+                { char: 'ヒャ', romaji: 'hya' }, { char: 'ヒュ', romaji: 'hyu' }, { char: 'ヒョ', romaji: 'hyo' },
+                { char: 'ミャ', romaji: 'mya' }, { char: 'ミュ', romaji: 'myu' }, { char: 'ミョ', romaji: 'myo' },
+                { char: 'リャ', romaji: 'rya' }, { char: 'リュ', romaji: 'ryu' }, { char: 'リョ', romaji: 'ryo' }
+            ]
         };
 
-        const WritingPad = ({ targetChar }) => {
+        const CATEGORIES = [
+            { id: 'h', label: '平假名', subs: [{ id: 'h-base', label: '清音' }, { id: 'h-extra', label: '濁/半濁' }, { id: 'h-yoon', label: '拗音' }] },
+            { id: 'k', label: '片假名', subs: [{ id: 'k-base', label: '清音' }, { id: 'k-extra', label: '濁/半濁' }, { id: 'k-yoon', label: '拗音' }] }
+        ];
+
+        const WritingPad = ({ targetChar, onClearRef }) => {
             const canvasRef = useRef(null);
             const [isDrawing, setIsDrawing] = useState(false);
 
             useEffect(() => {
                 const canvas = canvasRef.current;
                 const ctx = canvas.getContext('2d');
-                ctx.lineWidth = 6;
+                ctx.lineWidth = 10;
                 ctx.lineCap = 'round';
                 ctx.strokeStyle = '#4f46e5';
                 clearCanvas();
             }, [targetChar]);
 
             const clearCanvas = () => {
-                const ctx = canvasRef.current.getContext('2d');
-                ctx.clearRect(0, 0, 256, 256);
+                if (canvasRef.current) {
+                    const ctx = canvasRef.current.getContext('2d');
+                    ctx.clearRect(0, 0, 320, 320);
+                }
             };
+
+            if (onClearRef) onClearRef.current = clearCanvas;
 
             const getPos = (e) => {
                 const rect = canvasRef.current.getBoundingClientRect();
-                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-                return {
-                    x: clientX - rect.left,
-                    y: clientY - rect.top
-                };
+                const clientX = (e.clientX !== undefined) ? e.clientX : e.touches[0].clientX;
+                const clientY = (e.clientY !== undefined) ? e.clientY : e.touches[0].clientY;
+                return { x: clientX - rect.left, y: clientY - rect.top };
             };
 
             const startDrawing = (e) => {
@@ -105,165 +136,332 @@
             };
 
             return (
-                <div className="flex flex-col items-center gap-2">
-                    <div className="relative border-4 border-slate-200 rounded-2xl bg-white w-64 h-64 overflow-hidden canvas-container">
-                        <div className="absolute inset-0 flex items-center justify-center text-slate-100 text-[160px] pointer-events-none select-none">
-                            {targetChar}
-                        </div>
-                        <canvas 
-                            ref={canvasRef} 
-                            width={256} 
-                            height={256} 
-                            onMouseDown={startDrawing} 
-                            onMouseMove={draw} 
-                            onMouseUp={() => setIsDrawing(false)} 
-                            onMouseOut={() => setIsDrawing(false)}
-                            onTouchStart={startDrawing} 
-                            onTouchMove={draw} 
-                            onTouchEnd={() => setIsDrawing(false)} 
-                            className="relative z-10 w-full h-full cursor-crosshair" 
-                        />
+                <div className="relative border-4 border-slate-200 rounded-3xl bg-white w-full max-w-[320px] aspect-square overflow-hidden canvas-container shadow-inner mx-auto">
+                    <div className="absolute inset-0 flex items-center justify-center text-slate-100 text-[160px] pointer-events-none select-none font-black">
+                        {targetChar}
                     </div>
-                    <button onClick={clearCanvas} className="text-sm font-bold text-slate-400 hover:text-indigo-600 transition-colors">清除重寫</button>
+                    <canvas
+                        ref={canvasRef}
+                        width={320}
+                        height={320}
+                        onMouseDown={startDrawing}
+                        onMouseMove={draw}
+                        onMouseUp={() => setIsDrawing(false)}
+                        onMouseOut={() => setIsDrawing(false)}
+                        onTouchStart={startDrawing}
+                        onTouchMove={draw}
+                        onTouchEnd={() => setIsDrawing(false)}
+                        className="relative z-10 w-full h-full cursor-crosshair"
+                    />
                 </div>
             );
         };
 
         function App() {
             const [view, setView] = useState('dashboard');
-            const [activeTab, setActiveTab] = useState('h-base');
+            const [activeMainCat, setActiveMainCat] = useState('h');
+            const [activeSubCat, setActiveSubCat] = useState('h-base');
+            const [studySettings, setStudySettings] = useState({ count: 10, selectedCats: ['h-base'] });
             const [userData, setUserData] = useState(() => {
-                const saved = localStorage.getItem('jp_study_data');
-                return saved ? JSON.parse(saved) : { mastered: [] };
+                const saved = localStorage.getItem('jp_pro_v2');
+                return saved ? JSON.parse(saved) : { mastered: [], weights: {} };
             });
 
             useEffect(() => {
-                localStorage.setItem('jp_study_data', JSON.stringify(userData));
+                localStorage.setItem('jp_pro_v2', JSON.stringify(userData));
             }, [userData]);
 
-            const saveMastered = (keys) => {
-                setUserData(prev => ({ ...prev, mastered: [...new Set([...prev.mastered, ...keys])] }));
+            const updateMastered = (chars) => {
+                setUserData(prev => ({ ...prev, mastered: [...new Set([...prev.mastered, ...chars])] }));
+            };
+
+            const updateWeight = (char, delta) => {
+                setUserData(prev => {
+                    const current = prev.weights[char] || 1;
+                    return { ...prev, weights: { ...prev.weights, [char]: Math.max(1, current + delta) } };
+                });
             };
 
             return (
-                <div className="max-w-xl mx-auto min-h-screen flex flex-col p-4">
-                    {view === 'dashboard' ? (
-                        <Dashboard 
-                            data={userData} 
-                            setView={setView} 
-                            activeTab={activeTab} 
-                            setActiveTab={setActiveTab} 
-                        />
-                    ) : (
-                        <StudyMode 
-                            data={userData} 
-                            activeTab={activeTab}
-                            onComplete={saveMastered} 
-                            setView={setView} 
+                <div className="max-w-md mx-auto min-h-screen flex flex-col p-4">
+                    {view === 'dashboard' && (
+                        <Dashboard
+                            data={userData}
+                            setView={setView}
+                            activeMainCat={activeMainCat}
+                            setActiveMainCat={setActiveMainCat}
+                            activeSubCat={activeSubCat}
+                            setActiveSubCat={setActiveSubCat}
+                            setSettings={setStudySettings}
                         />
                     )}
-                    <footer className="mt-auto py-4 text-center text-slate-300 text-xs font-medium">
-                        Progress is saved in your browser storage.
-                    </footer>
+                    {view === 'study' && <StudyMode data={userData} category={activeSubCat} onComplete={updateMastered} setView={setView} />}
+                    {view === 'practice' && <PracticeMode data={userData} settings={studySettings} onWeightChange={updateWeight} setView={setView} />}
                 </div>
             );
         }
 
-        function Dashboard({ data, setView, activeTab, setActiveTab }) {
-            const currentGroup = ALL_DATA[activeTab];
-            const masteredInGroup = currentGroup.data.filter(c => data.mastered.includes(c.char)).length;
+        function Dashboard({ data, setView, activeMainCat, setActiveMainCat, activeSubCat, setActiveSubCat, setSettings }) {
+            const [isPracticeModal, setIsPracticeModal] = useState(false);
+            const [tempSettings, setTempSettings] = useState({ count: 10, selectedCats: [activeSubCat] });
+
+            const currentMain = CATEGORIES.find(c => c.id === activeMainCat);
+            const currentSubData = RAW_DATA[activeSubCat];
+            const masteredCount = currentSubData.filter(c => data.mastered.includes(c.char)).length;
+
+            const poolCount = useMemo(() => {
+                let count = 0;
+                tempSettings.selectedCats.forEach(cat => {
+                    RAW_DATA[cat].forEach(item => {
+                        if (data.mastered.includes(item.char)) count++;
+                    });
+                });
+                return count;
+            }, [tempSettings.selectedCats, data.mastered]);
+
+            const canStartPractice = poolCount >= tempSettings.count;
+
+            const handleMainChange = (id) => {
+                setActiveMainCat(id);
+                setActiveSubCat(`${id}-base`);
+            };
 
             return (
-                <div className="space-y-6">
-                    <header className="flex justify-between items-end">
-                        <div>
-                            <h1 className="text-3xl font-black text-slate-900">日文五十音</h1>
-                            <p className="text-slate-400 text-xs font-bold tracking-widest">PROGRESS TRACKER</p>
+                <div className="space-y-6 animate-in fade-in duration-300">
+                    <header className="flex justify-between items-center">
+                        <h1 className="text-3xl font-black text-slate-900">五十音<span className="text-indigo-600">。</span></h1>
+                        <div className="bg-white px-3 py-1 rounded-full border border-slate-200 text-xs font-bold text-slate-500">
+                            已掌握: {data.mastered.length}
                         </div>
                     </header>
 
-                    <div className="flex gap-1 p-1 bg-slate-200 rounded-xl">
-                        {Object.keys(ALL_DATA).map(key => (
+                    <div className="grid grid-cols-2 gap-2 p-1 bg-slate-200 rounded-2xl">
+                        {CATEGORIES.map(c => (
                             <button
-                                key={key}
-                                onClick={() => setActiveTab(key)}
-                                className={`flex-1 py-2 text-xs font-black rounded-lg transition-all ${activeTab === key ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                                key={c.id}
+                                onClick={() => handleMainChange(c.id)}
+                                className={`py-3 text-sm font-black rounded-xl transition-all ${activeMainCat === c.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
                             >
-                                {ALL_DATA[key].title.split(' ')[1]}
+                                {c.label}
                             </button>
                         ))}
                     </div>
 
-                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex justify-between items-center">
-                        <div>
-                            <h2 className="text-lg font-black">{currentGroup.title}</h2>
-                            <p className="text-sm font-bold text-slate-400">{masteredInGroup} / {currentGroup.data.length}</p>
-                        </div>
-                        <button 
-                            onClick={() => setView('study')} 
-                            className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all"
-                        >
-                            Start Study
-                        </button>
+                    <div className="grid grid-cols-3 gap-2">
+                        {currentMain.subs.map(sub => (
+                            <button
+                                key={sub.id}
+                                onClick={() => setActiveSubCat(sub.id)}
+                                className={`py-2 text-xs font-bold rounded-xl border-2 transition-all ${activeSubCat === sub.id ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-white border-slate-100 text-slate-400'}`}
+                            >
+                                {sub.label}
+                            </button>
+                        ))}
                     </div>
 
-                    <div className="grid grid-cols-5 gap-2">
-                        {currentGroup.data.map((c, i) => {
-                            const isMastered = data.mastered.includes(c.char);
-                            return (
-                                <div key={i} className="flex flex-col items-center gap-1">
-                                    <div className={`w-full aspect-square flex items-center justify-center rounded-xl text-xl font-bold transition-all border-2 ${isMastered ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-white text-slate-200 border-slate-100'}`}>
-                                        {c.char}
-                                    </div>
-                                    <span className="text-[10px] font-black text-slate-300 uppercase">{c.romaji}</span>
-                                </div>
-                            );
-                        })}
+                    <div className="flex gap-3">
+                        <button onClick={() => setView('study')} className="flex-1 bg-indigo-600 text-white p-4 rounded-2xl font-black shadow-lg shadow-indigo-100 active:scale-95 transition-transform">學習</button>
+                        <button onClick={() => setIsPracticeModal(true)} className="flex-1 bg-emerald-500 text-white p-4 rounded-2xl font-black shadow-lg shadow-emerald-100 active:scale-95 transition-transform">練習</button>
                     </div>
+
+                    <div className="bg-white rounded-3xl border-2 border-slate-100 p-4">
+                        <div className="flex justify-between items-center mb-4 px-1">
+                            <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{currentMain.label} - {currentMain.subs.find(s => s.id === activeSubCat).label}</span>
+                            <span className="text-xs font-bold text-indigo-500">{masteredCount} / {currentSubData.length}</span>
+                        </div>
+                        <div className="grid grid-cols-5 gap-2">
+                            {currentSubData.map((c, i) => {
+                                const isMastered = data.mastered.includes(c.char);
+                                const weight = data.weights[c.char] || 1;
+                                return (
+                                    <div key={i} className="relative">
+                                        <div className={`aspect-square flex items-center justify-center rounded-xl text-lg font-bold transition-all border-2 ${isMastered ? 'bg-indigo-50 border-indigo-100 text-indigo-600' : 'bg-slate-50 border-slate-50 text-slate-200'}`}>
+                                            {c.char}
+                                        </div>
+                                        {weight > 1 && <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse border-2 border-white"></div>}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {isPracticeModal && (
+                        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                            <div className="bg-white w-full max-w-md rounded-t-[40px] md:rounded-[40px] p-8 shadow-2xl animate-in slide-in-from-bottom duration-300">
+                                <h2 className="text-2xl font-black mb-6">練習設定</h2>
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="text-xs font-black text-slate-400 uppercase block mb-3">題數</label>
+                                        <div className="flex gap-2">
+                                            {[10, 20, 50].map(n => (
+                                                <button key={n} onClick={() => setTempSettings(s => ({ ...s, count: n }))} className={`flex-1 py-3 rounded-xl font-bold border-2 ${tempSettings.count === n ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-100 text-slate-400'}`}>{n}</button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="flex justify-between items-center mb-3">
+                                            <label className="text-xs font-black text-slate-400 uppercase">分類 (可多選)</label>
+                                            <span className={`text-[10px] font-bold ${canStartPractice ? 'text-indigo-500' : 'text-red-500'}`}>
+                                                可用題數: {poolCount}
+                                            </span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
+                                            {CATEGORIES.flatMap(c => c.subs).map(sub => {
+                                                const isSelected = tempSettings.selectedCats.includes(sub.id);
+                                                return (
+                                                    <button
+                                                        key={sub.id}
+                                                        onClick={() => setTempSettings(s => ({ ...s, selectedCats: isSelected ? s.selectedCats.filter(id => id !== sub.id) : [...s.selectedCats, sub.id] }))}
+                                                        className={`text-center py-3 rounded-xl text-xs font-black border-2 ${isSelected ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-100 text-slate-400'}`}
+                                                    >
+                                                        {sub.label.includes('濁') ? (sub.id.startsWith('h') ? '平-' : '片-') + sub.label : sub.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                    {!canStartPractice && tempSettings.selectedCats.length > 0 && (
+                                        <div className="p-3 bg-red-50 rounded-xl text-[10px] font-bold text-red-500 text-center">
+                                            選定分類中已掌握的假名不足 {tempSettings.count} 個，請先學習更多內容。
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex gap-3 mt-8">
+                                    <button onClick={() => setIsPracticeModal(false)} className="flex-1 py-4 font-bold text-slate-400">取消</button>
+                                    <button
+                                        disabled={!canStartPractice}
+                                        onClick={() => { setSettings(tempSettings); setView('practice'); }}
+                                        className="flex-[2] py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-lg disabled:opacity-30 disabled:bg-slate-200"
+                                    >
+                                        開始練習
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
 
-        function StudyMode({ data, activeTab, onComplete, setView }) {
+        function StudyMode({ data, category, onComplete, setView }) {
             const [index, setIndex] = useState(0);
             const list = useMemo(() => {
-                const unmastered = ALL_DATA[activeTab].data.filter(c => !data.mastered.includes(c.char));
+                const unmastered = RAW_DATA[category].filter(c => !data.mastered.includes(c.char));
                 return unmastered.length > 0 ? unmastered.slice(0, 5) : [];
-            }, [activeTab]);
+            }, [category, data.mastered]);
+
+            const clearRef = useRef(null);
 
             if (list.length === 0) return (
-                <div className="text-center pt-20 space-y-6">
-                    <div className="text-6xl">✨</div>
-                    <h2 className="text-2xl font-black">All characters mastered!</h2>
-                    <button onClick={() => setView('dashboard')} className="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-black">Go Back</button>
+                <div className="text-center pt-20 px-6">
+                    <div className="text-6xl mb-4">✨</div>
+                    <h2 className="text-xl font-black mb-6">太棒了！此分類已完成</h2>
+                    <button onClick={() => setView('dashboard')} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black">返回首頁</button>
                 </div>
             );
 
             const current = list[index];
 
             return (
-                <div className="flex flex-col items-center">
-                    <div className="mb-6 text-center">
-                        <div className="text-[120px] font-black text-indigo-600 leading-none">{current.char}</div>
-                        <div className="text-2xl font-black text-slate-300 uppercase tracking-widest mt-2">{current.romaji}</div>
+                <div className="flex flex-col items-center h-full space-y-6">
+                    <div className="w-full flex justify-between items-center py-2">
+                        <button onClick={() => setView('dashboard')} className="text-slate-300"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg></button>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{index + 1} / {list.length}</span>
+                        <div className="w-6"></div>
                     </div>
-                    
-                    <WritingPad targetChar={current.char} />
-
-                    <div className="w-full flex gap-4 mt-8">
-                        <button 
-                            onClick={() => setIndex(i => Math.max(0, i-1))} 
-                            className="flex-1 py-4 border-2 border-slate-100 text-slate-400 font-black rounded-2xl disabled:opacity-30" 
-                            disabled={index===0}
-                        >
-                            Prev
-                        </button>
-                        {index < list.length - 1 ? 
-                            <button onClick={() => setIndex(i => i+1)} className="flex-1 py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-lg">Next</button> :
-                            <button onClick={() => { onComplete(list.map(i=>i.char)); setView('dashboard'); }} className="flex-1 py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-lg">Finish</button>
+                    <div className="text-center">
+                        <div className="text-8xl font-black text-indigo-600 leading-none">{current.char}</div>
+                        <div className="text-xl font-black text-slate-300 uppercase mt-2 tracking-widest">{current.romaji}</div>
+                    </div>
+                    <WritingPad targetChar={current.char} onClearRef={clearRef} />
+                    <div className="w-full flex gap-3">
+                        <button onClick={() => setIndex(i => Math.max(0, i - 1))} disabled={index === 0} className="flex-1 py-4 border-2 border-slate-200 text-slate-300 rounded-2xl font-black disabled:opacity-10">回上個</button>
+                        {index < list.length - 1 ?
+                            <button onClick={() => setIndex(i => i + 1)} className="flex-[2] py-4 bg-indigo-600 text-white rounded-2xl font-black">下一個</button> :
+                            <button onClick={() => { onComplete(list.map(i => i.char)); setView('dashboard'); }} className="flex-[2] py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg">完成學習</button>
                         }
                     </div>
-                    <button onClick={() => setView('dashboard')} className="mt-8 text-xs font-black text-slate-300 uppercase hover:text-slate-500 transition-colors">Exit Study</button>
+                </div>
+            );
+        }
+
+        function PracticeMode({ data, settings, onWeightChange, setView }) {
+            const [index, setIndex] = useState(0);
+            const [showAnswer, setShowAnswer] = useState(false);
+            const clearRef = useRef(null);
+
+            const quizList = useMemo(() => {
+                const pool = [];
+                settings.selectedCats.forEach(cat => {
+                    RAW_DATA[cat].forEach(item => {
+                        if (data.mastered.includes(item.char)) pool.push(item);
+                    });
+                });
+
+                if (pool.length < settings.count) return [];
+
+                const result = [];
+                const tempPool = [...pool];
+
+                for (let i = 0; i < settings.count; i++) {
+                    const poolWithWeights = [];
+                    tempPool.forEach(item => {
+                        const weight = data.weights[item.char] || 1;
+                        for (let w = 0; w < weight; w++) poolWithWeights.push(item);
+                    });
+
+                    const selected = poolWithWeights[Math.floor(Math.random() * poolWithWeights.length)];
+                    result.push({ ...selected, id: i });
+
+                    const removeIdx = tempPool.findIndex(item => item.char === selected.char);
+                    if (removeIdx > -1) tempPool.splice(removeIdx, 1);
+                }
+                return result;
+            }, [settings, data.mastered, data.weights]);
+
+            if (quizList.length === 0) return (
+                <div className="text-center pt-20 px-6">
+                    <h2 className="text-lg font-black mb-4">無法生成練習題</h2>
+                    <p className="text-slate-400 mb-8 text-sm">可能是已掌握的假名不足，或是設定錯誤。</p>
+                    <button onClick={() => setView('dashboard')} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black">返回首頁</button>
+                </div>
+            );
+
+            const current = quizList[index];
+
+            const handleResult = (isCorrect) => {
+                onWeightChange(current.char, isCorrect ? -1 : 1);
+                if (index < quizList.length - 1) {
+                    setShowAnswer(false);
+                    setIndex(i => i + 1);
+                    if (clearRef.current) clearRef.current();
+                } else {
+                    setView('dashboard');
+                }
+            };
+
+            return (
+                <div className="flex flex-col items-center h-full space-y-6">
+                    <div className="w-full flex justify-between items-center py-2">
+                        <button onClick={() => setView('dashboard')} className="text-xs font-black text-slate-300 uppercase tracking-widest">退出</button>
+                        <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">練習 {index + 1} / {quizList.length}</span>
+                        <div className="w-8"></div>
+                    </div>
+                    <div className="text-center h-28 flex flex-col justify-center">
+                        <div className={`text-xl font-black text-indigo-300 uppercase mb-1 transition-all ${showAnswer ? 'opacity-100' : 'opacity-0'}`}>{current.char}</div>
+                        <div className="text-6xl font-black text-slate-800 leading-none">{current.romaji}</div>
+                    </div>
+                    <WritingPad targetChar={showAnswer ? current.char : ""} onClearRef={clearRef} />
+                    <div className="w-full space-y-3">
+                        {!showAnswer ? (
+                            <button onClick={() => setShowAnswer(true)} className="w-full py-5 bg-slate-900 text-white font-black rounded-3xl shadow-xl active:scale-95 transition-transform">檢查答案</button>
+                        ) : (
+                            <div className="flex gap-3">
+                                <button onClick={() => handleResult(false)} className="flex-1 py-5 bg-red-50 text-red-600 font-black rounded-3xl border-2 border-red-100">再練一次</button>
+                                <button onClick={() => handleResult(true)} className="flex-1 py-5 bg-emerald-500 text-white font-black rounded-3xl shadow-lg shadow-emerald-100">記住了</button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             );
         }
@@ -272,4 +470,5 @@
         root.render(<App />);
     </script>
 </body>
+
 </html>
